@@ -13,17 +13,17 @@ namespace NzbDrone.Core.Datastore.Migration
             Alter.Table("TrackFiles").AddColumn("Path").AsString().Nullable();
 
             // Remove anything where RelativePath is null
-            Execute.Sql(@"DELETE FROM TrackFiles WHERE RelativePath IS NULL");
+            IfDatabase("sqlite").Execute.Sql(@"DELETE FROM TrackFiles WHERE RelativePath IS NULL");
 
             // Remove anything not linked to a track (these shouldn't be present in version < 30)
-            Execute.Sql(@"DELETE FROM TrackFiles
+            IfDatabase("sqlite").Execute.Sql(@"DELETE FROM TrackFiles
                           WHERE Id IN (
                             SELECT TrackFiles.Id FROM TrackFiles
                             LEFT JOIN Tracks ON TrackFiles.Id = Tracks.TrackFileId
                             WHERE Tracks.Id IS NULL)");
 
             // Remove anything where we can't get an artist path (i.e. we don't know where it is)
-            Execute.Sql(@"DELETE FROM TrackFiles
+            IfDatabase("sqlite").Execute.Sql(@"DELETE FROM TrackFiles
                           WHERE Id IN (
                             SELECT TrackFiles.Id FROM TrackFiles
                             LEFT JOIN Albums ON TrackFiles.AlbumId = Albums.Id
@@ -31,7 +31,7 @@ namespace NzbDrone.Core.Datastore.Migration
                             WHERE Artists.Path IS NULL)");
 
             // Remove anything linked to unmonitored or unidentified releases.  This should ensure uniqueness of track files.
-            Execute.Sql(@"DELETE FROM TrackFiles
+            IfDatabase("sqlite").Execute.Sql(@"DELETE FROM TrackFiles
                           WHERE Id IN (
                             SELECT TrackFiles.Id FROM TrackFiles
                             LEFT JOIN Tracks ON TrackFiles.Id = Tracks.TrackFileId
@@ -40,14 +40,14 @@ namespace NzbDrone.Core.Datastore.Migration
                             OR AlbumReleases.Monitored IS NULL)");
 
             // Populate the full paths
-            Execute.Sql(@"UPDATE TrackFiles
+            IfDatabase("sqlite").Execute.Sql(@"UPDATE TrackFiles
                           SET Path = (SELECT Artists.Path || '" + System.IO.Path.DirectorySeparatorChar + @"' || TrackFiles.RelativePath
                                       FROM Artists
                                       JOIN Albums ON Albums.ArtistMetadataId = Artists.ArtistMetadataId
                                       WHERE TrackFiles.AlbumId = Albums.Id)");
 
             // Belt and braces to ensure uniqueness
-            Execute.Sql(@"DELETE FROM TrackFiles 
+            IfDatabase("sqlite").Execute.Sql(@"DELETE FROM TrackFiles 
                           WHERE rowid NOT IN (
                             SELECT min(rowid)
                             FROM TrackFiles

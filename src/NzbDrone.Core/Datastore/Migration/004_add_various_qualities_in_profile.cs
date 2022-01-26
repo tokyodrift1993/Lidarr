@@ -13,7 +13,7 @@ namespace NzbDrone.Core.Datastore.Migration
     {
         protected override void MainDbUpgrade()
         {
-            Execute.Sql("UPDATE QualityDefinitions SET Title = 'MP3-160' WHERE Quality = 5"); // Change MP3-512 to MP3-160
+            Execute.Sql("UPDATE \"QualityDefinitions\" SET \"Title\" = 'MP3-160' WHERE \"Quality\" = 5"); // Change MP3-512 to MP3-160
             Execute.WithConnection(ConvertProfile);
         }
 
@@ -173,7 +173,7 @@ namespace NzbDrone.Core.Datastore.Migration
                 {
                     updateProfileCmd.Transaction = _transaction;
                     updateProfileCmd.CommandText =
-                        "UPDATE Profiles SET Name = ?, Cutoff = ?, Items = ? WHERE Id = ?";
+                        "UPDATE \"Profiles\" SET \"Name\" = ?, \"Cutoff\" = ?, \"Items\" = ? WHERE \"Id\" = ?";
                     updateProfileCmd.AddParameter(profile.Name);
                     updateProfileCmd.AddParameter(profile.Cutoff);
                     updateProfileCmd.AddParameter(profile.Items.ToJson());
@@ -323,7 +323,7 @@ namespace NzbDrone.Core.Datastore.Migration
             using (var getProfilesCmd = _connection.CreateCommand())
             {
                 getProfilesCmd.Transaction = _transaction;
-                getProfilesCmd.CommandText = @"SELECT Id, Name, Cutoff, Items FROM Profiles";
+                getProfilesCmd.CommandText = @"SELECT ""Id"", ""Name"", ""Cutoff"", ""Items"" FROM ""Profiles""";
 
                 using (var profileReader = getProfilesCmd.ExecuteReader())
                 {

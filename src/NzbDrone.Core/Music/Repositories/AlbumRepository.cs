@@ -38,12 +38,25 @@ namespace NzbDrone.Core.Music
 
         public List<Album> GetAlbums(int artistId)
         {
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                return Query(Builder().Join<Album, Artist>((l, r) => l.ArtistMetadataId == r.ArtistMetadataId).WherePostgres<Artist>(a => a.Id == artistId));
+            }
+
             return Query(Builder().Join<Album, Artist>((l, r) => l.ArtistMetadataId == r.ArtistMetadataId).Where<Artist>(a => a.Id == artistId));
         }
 
         public List<Album> GetLastAlbums(IEnumerable<int> artistMetadataIds)
         {
             var now = DateTime.UtcNow;
+
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                return Query(Builder().WherePostgres<Album>(x => artistMetadataIds.Contains(x.ArtistMetadataId) && x.ReleaseDate < now)
+                                        .GroupBy<Album>(x => x.ArtistMetadataId)
+                                        .Having("Albums.ReleaseDate = MAX(Albums.ReleaseDate)"));
+            }
+
             return Query(Builder().Where<Album>(x => artistMetadataIds.Contains(x.ArtistMetadataId) && x.ReleaseDate < now)
                          .GroupBy<Album>(x => x.ArtistMetadataId)
                          .Having("Albums.ReleaseDate = MAX(Albums.ReleaseDate)"));
@@ -52,6 +65,14 @@ namespace NzbDrone.Core.Music
         public List<Album> GetNextAlbums(IEnumerable<int> artistMetadataIds)
         {
             var now = DateTime.UtcNow;
+
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                return Query(Builder().WherePostgres<Album>(x => artistMetadataIds.Contains(x.ArtistMetadataId) && x.ReleaseDate > now)
+                                        .GroupBy<Album>(x => x.ArtistMetadataId)
+                                        .Having("Albums.ReleaseDate = MIN(Albums.ReleaseDate)"));
+            }
+
             return Query(Builder().Where<Album>(x => artistMetadataIds.Contains(x.ArtistMetadataId) && x.ReleaseDate > now)
                          .GroupBy<Album>(x => x.ArtistMetadataId)
                          .Having("Albums.ReleaseDate = MIN(Albums.ReleaseDate)"));
@@ -74,15 +95,31 @@ namespace NzbDrone.Core.Music
 
         //x.Id == null is converted to SQL, so warning incorrect
 #pragma warning disable CS0472
-        private SqlBuilder AlbumsWithoutFilesBuilder(DateTime currentTime) => Builder()
-            .Join<Album, Artist>((l, r) => l.ArtistMetadataId == r.ArtistMetadataId)
-            .Join<Album, AlbumRelease>((a, r) => a.Id == r.AlbumId)
-            .Join<AlbumRelease, Track>((r, t) => r.Id == t.AlbumReleaseId)
-            .LeftJoin<Track, TrackFile>((t, f) => t.TrackFileId == f.Id)
-            .Where<TrackFile>(f => f.Id == null)
-            .Where<AlbumRelease>(r => r.Monitored == true)
-            .Where<Album>(a => a.ReleaseDate <= currentTime)
-            .GroupBy<Album>(a => a.Id);
+        private SqlBuilder AlbumsWithoutFilesBuilder(DateTime currentTime)
+        {
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                return Builder()
+                        .Join<Album, Artist>((l, r) => l.ArtistMetadataId == r.ArtistMetadataId)
+                        .Join<Album, AlbumRelease>((a, r) => a.Id == r.AlbumId)
+                        .Join<AlbumRelease, Track>((r, t) => r.Id == t.AlbumReleaseId)
+                        .LeftJoin<Track, TrackFile>((t, f) => t.TrackFileId == f.Id)
+                        .WherePostgres<TrackFile>(f => f.Id == null)
+                        .WherePostgres<AlbumRelease>(r => r.Monitored == true)
+                        .WherePostgres<Album>(a => a.ReleaseDate <= currentTime)
+                        .GroupBy<Album>(a => a.Id);
+            }
+
+            return Builder()
+                    .Join<Album, Artist>((l, r) => l.ArtistMetadataId == r.ArtistMetadataId)
+                    .Join<Album, AlbumRelease>((a, r) => a.Id == r.AlbumId)
+                    .Join<AlbumRelease, Track>((r, t) => r.Id == t.AlbumReleaseId)
+                    .LeftJoin<Track, TrackFile>((t, f) => t.TrackFileId == f.Id)
+                    .Where<TrackFile>(f => f.Id == null)
+                    .Where<AlbumRelease>(r => r.Monitored == true)
+                    .Where<Album>(a => a.ReleaseDate <= currentTime)
+                    .GroupBy<Album>(a => a.Id);
+        }
 #pragma warning restore CS0472
 
         public PagingSpec<Album> AlbumsWithoutFiles(PagingSpec<Album> pagingSpec)
@@ -95,14 +132,29 @@ namespace NzbDrone.Core.Music
             return pagingSpec;
         }
 
-        private SqlBuilder AlbumsWhereCutoffUnmetBuilder(List<QualitiesBelowCutoff> qualitiesBelowCutoff) => Builder()
-            .Join<Album, Artist>((l, r) => l.ArtistMetadataId == r.ArtistMetadataId)
-            .Join<Album, AlbumRelease>((a, r) => a.Id == r.AlbumId)
-            .Join<AlbumRelease, Track>((r, t) => r.Id == t.AlbumReleaseId)
-            .LeftJoin<Track, TrackFile>((t, f) => t.TrackFileId == f.Id)
-            .Where<AlbumRelease>(r => r.Monitored == true)
-            .GroupBy<Album>(a => a.Id)
-            .Having(BuildQualityCutoffWhereClause(qualitiesBelowCutoff));
+        private SqlBuilder AlbumsWhereCutoffUnmetBuilder(List<QualitiesBelowCutoff> qualitiesBelowCutoff)
+        {
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                return Builder()
+                    .Join<Album, Artist>((l, r) => l.ArtistMetadataId == r.ArtistMetadataId)
+                    .Join<Album, AlbumRelease>((a, r) => a.Id == r.AlbumId)
+                    .Join<AlbumRelease, Track>((r, t) => r.Id == t.AlbumReleaseId)
+                    .LeftJoin<Track, TrackFile>((t, f) => t.TrackFileId == f.Id)
+                    .WherePostgres<AlbumRelease>(r => r.Monitored == true)
+                    .GroupBy<Album>(a => a.Id)
+                    .Having(BuildQualityCutoffWhereClause(qualitiesBelowCutoff));
+            }
+
+            return Builder()
+                    .Join<Album, Artist>((l, r) => l.ArtistMetadataId == r.ArtistMetadataId)
+                    .Join<Album, AlbumRelease>((a, r) => a.Id == r.AlbumId)
+                    .Join<AlbumRelease, Track>((r, t) => r.Id == t.AlbumReleaseId)
+                    .LeftJoin<Track, TrackFile>((t, f) => t.TrackFileId == f.Id)
+                    .Where<AlbumRelease>(r => r.Monitored == true)
+                    .GroupBy<Album>(a => a.Id)
+                    .Having(BuildQualityCutoffWhereClause(qualitiesBelowCutoff));
+        }
 
         private string BuildQualityCutoffWhereClause(List<QualitiesBelowCutoff> qualitiesBelowCutoff)
         {
@@ -131,13 +183,31 @@ namespace NzbDrone.Core.Music
 
         public List<Album> AlbumsBetweenDates(DateTime startDate, DateTime endDate, bool includeUnmonitored)
         {
-            var builder = Builder().Where<Album>(rg => rg.ReleaseDate >= startDate && rg.ReleaseDate <= endDate);
+            SqlBuilder builder;
+
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                builder = Builder().WherePostgres<Album>(rg => rg.ReleaseDate >= startDate && rg.ReleaseDate <= endDate);
+            }
+            else
+            {
+                builder = Builder().Where<Album>(rg => rg.ReleaseDate >= startDate && rg.ReleaseDate <= endDate);
+            }
 
             if (!includeUnmonitored)
             {
-                builder = builder.Where<Album>(e => e.Monitored == true)
-                    .Join<Album, Artist>((l, r) => l.ArtistMetadataId == r.ArtistMetadataId)
-                    .Where<Artist>(e => e.Monitored == true);
+                if (_database.DatabaseType == DatabaseType.PostgreSQL)
+                {
+                    builder = builder.WherePostgres<Album>(e => e.Monitored == true)
+                        .Join<Album, Artist>((l, r) => l.ArtistMetadataId == r.ArtistMetadataId)
+                        .WherePostgres<Artist>(e => e.Monitored == true);
+                }
+                else
+                {
+                    builder = builder.Where<Album>(e => e.Monitored == true)
+                        .Join<Album, Artist>((l, r) => l.ArtistMetadataId == r.ArtistMetadataId)
+                        .Where<Artist>(e => e.Monitored == true);
+                }
             }
 
             return Query(builder);
@@ -145,15 +215,35 @@ namespace NzbDrone.Core.Music
 
         public List<Album> ArtistAlbumsBetweenDates(Artist artist, DateTime startDate, DateTime endDate, bool includeUnmonitored)
         {
-            var builder = Builder().Where<Album>(rg => rg.ReleaseDate >= startDate &&
-                                                 rg.ReleaseDate <= endDate &&
-                                                 rg.ArtistMetadataId == artist.ArtistMetadataId);
+            SqlBuilder builder;
+
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                builder = Builder().WherePostgres<Album>(rg => rg.ReleaseDate >= startDate &&
+                                                    rg.ReleaseDate <= endDate &&
+                                                    rg.ArtistMetadataId == artist.ArtistMetadataId);
+            }
+            else
+            {
+                builder = Builder().Where<Album>(rg => rg.ReleaseDate >= startDate &&
+                                                    rg.ReleaseDate <= endDate &&
+                                                    rg.ArtistMetadataId == artist.ArtistMetadataId);
+            }
 
             if (!includeUnmonitored)
             {
-                builder = builder.Where<Album>(e => e.Monitored == true)
-                    .Join<Album, Artist>((l, r) => l.ArtistMetadataId == r.ArtistMetadataId)
-                    .Where<Artist>(e => e.Monitored == true);
+                if (_database.DatabaseType == DatabaseType.PostgreSQL)
+                {
+                    builder = builder.WherePostgres<Album>(e => e.Monitored == true)
+                        .Join<Album, Artist>((l, r) => l.ArtistMetadataId == r.ArtistMetadataId)
+                        .WherePostgres<Artist>(e => e.Monitored == true);
+                }
+                else
+                {
+                    builder = builder.Where<Album>(e => e.Monitored == true)
+                        .Join<Album, Artist>((l, r) => l.ArtistMetadataId == r.ArtistMetadataId)
+                        .Where<Artist>(e => e.Monitored == true);
+                }
             }
 
             return Query(builder);
@@ -186,12 +276,25 @@ namespace NzbDrone.Core.Music
 
         public Album FindAlbumByRelease(string albumReleaseId)
         {
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                return Query(Builder().Join<Album, AlbumRelease>((a, r) => a.Id == r.AlbumId)
+                         .WherePostgres<AlbumRelease>(x => x.ForeignReleaseId == albumReleaseId)).FirstOrDefault();
+            }
+
             return Query(Builder().Join<Album, AlbumRelease>((a, r) => a.Id == r.AlbumId)
                          .Where<AlbumRelease>(x => x.ForeignReleaseId == albumReleaseId)).FirstOrDefault();
         }
 
         public Album FindAlbumByTrack(int trackId)
         {
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                return Query(Builder().Join<Album, AlbumRelease>((a, r) => a.Id == r.AlbumId)
+                            .Join<AlbumRelease, Track>((r, t) => r.Id == t.AlbumReleaseId)
+                            .WherePostgres<Track>(x => x.Id == trackId)).FirstOrDefault();
+            }
+
             return Query(Builder().Join<Album, AlbumRelease>((a, r) => a.Id == r.AlbumId)
                          .Join<AlbumRelease, Track>((r, t) => r.Id == t.AlbumReleaseId)
                          .Where<Track>(x => x.Id == trackId)).FirstOrDefault();
@@ -200,6 +303,17 @@ namespace NzbDrone.Core.Music
         public List<Album> GetArtistAlbumsWithFiles(Artist artist)
         {
             var id = artist.ArtistMetadataId;
+
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                return Query(Builder().Join<Album, AlbumRelease>((a, r) => a.Id == r.AlbumId)
+                         .Join<AlbumRelease, Track>((r, t) => r.Id == t.AlbumReleaseId)
+                         .Join<Track, TrackFile>((t, f) => t.TrackFileId == f.Id)
+                         .WherePostgres<Album>(x => x.ArtistMetadataId == id)
+                         .WherePostgres<AlbumRelease>(r => r.Monitored == true)
+                         .GroupBy<Album>(x => x.Id));
+            }
+
             return Query(Builder().Join<Album, AlbumRelease>((a, r) => a.Id == r.AlbumId)
                          .Join<AlbumRelease, Track>((r, t) => r.Id == t.AlbumReleaseId)
                          .Join<Track, TrackFile>((t, f) => t.TrackFileId == f.Id)

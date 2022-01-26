@@ -44,10 +44,22 @@ namespace NzbDrone.Core.Music
         {
             // populate the albums and artist metadata also
             // this hopefully speeds up the track matching a lot
-            var builder = new SqlBuilder()
-                .LeftJoin<AlbumRelease, Album>((r, a) => r.AlbumId == a.Id)
-                .LeftJoin<Album, ArtistMetadata>((a, m) => a.ArtistMetadataId == m.Id)
-                .Where<AlbumRelease>(r => r.AlbumId == id);
+            SqlBuilder builder;
+
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                builder = new SqlBuilder()
+                    .LeftJoin<AlbumRelease, Album>((r, a) => r.AlbumId == a.Id)
+                    .LeftJoin<Album, ArtistMetadata>((a, m) => a.ArtistMetadataId == m.Id)
+                    .WherePostgres<AlbumRelease>(r => r.AlbumId == id);
+            }
+            else
+            {
+                builder = new SqlBuilder()
+                    .LeftJoin<AlbumRelease, Album>((r, a) => r.AlbumId == a.Id)
+                    .LeftJoin<Album, ArtistMetadata>((a, m) => a.ArtistMetadataId == m.Id)
+                    .Where<AlbumRelease>(r => r.AlbumId == id);
+            }
 
             return _database.QueryJoined<AlbumRelease, Album, ArtistMetadata>(builder, (release, album, metadata) =>
                     {
@@ -63,6 +75,14 @@ namespace NzbDrone.Core.Music
 
         public List<AlbumRelease> FindByRecordingId(List<string> recordingIds)
         {
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                return Query(Builder()
+                         .Join<AlbumRelease, Track>((r, t) => r.Id == t.AlbumReleaseId)
+                         .WherePostgres<Track>(t => Enumerable.Contains(recordingIds, t.ForeignRecordingId))
+                         .GroupBy<AlbumRelease>(x => x.Id));
+            }
+
             return Query(Builder()
                          .Join<AlbumRelease, Track>((r, t) => r.Id == t.AlbumReleaseId)
                          .Where<Track>(t => Enumerable.Contains(recordingIds, t.ForeignRecordingId))

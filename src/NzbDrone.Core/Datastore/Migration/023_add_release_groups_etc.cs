@@ -30,18 +30,18 @@ namespace NzbDrone.Core.Datastore.Migration
                 .WithColumn("Members").AsString().Nullable();
 
             // we want to preserve the artist ID.  Shove all the metadata into the metadata table.
-            Execute.Sql(@"INSERT INTO ArtistMetadata (ForeignArtistId, Name, Overview, Disambiguation, Type, Status, Images, Links, Genres, Ratings, Members)
-                          SELECT ForeignArtistId, Name, Overview, Disambiguation, ArtistType, Status, Images, Links, Genres, Ratings, Members
-                          FROM Artists");
+            Execute.Sql(@"INSERT INTO ""ArtistMetadata"" (""ForeignArtistId"", ""Name"", ""Overview"", ""Disambiguation"", ""Type"", ""Status"", ""Images"", ""Links"", ""Genres"", ""Ratings"", ""Members"")
+                          SELECT ""ForeignArtistId"", ""Name"", ""Overview"", ""Disambiguation"", ""ArtistType"", ""Status"", ""Images"", ""Links"", ""Genres"", ""Ratings"", ""Members""
+                          FROM ""Artists""");
 
             // Add an ArtistMetadataId column to Artists
             Alter.Table("Artists").AddColumn("ArtistMetadataId").AsInt32().WithDefaultValue(0);
 
             // Update artistmetadataId
-            Execute.Sql(@"UPDATE Artists
-                          SET ArtistMetadataId = (SELECT ArtistMetadata.Id 
-                                                  FROM ArtistMetadata 
-                                                  WHERE ArtistMetadata.ForeignArtistId = Artists.ForeignArtistId)");
+            Execute.Sql(@"UPDATE ""Artists""
+                          SET ""ArtistMetadataId"" = (SELECT ""ArtistMetadata"".""Id"" 
+                                                  FROM ""ArtistMetadata"" 
+                                                  WHERE ""ArtistMetadata"".""ForeignArtistId"" = ""Artists"".""ForeignArtistId"")");
 
             // ALBUM RELEASES TABLE - Do this before we mess with the Albums table
             Create.TableForModel("AlbumReleases")
@@ -68,11 +68,11 @@ namespace NzbDrone.Core.Datastore.Migration
             Alter.Table("Albums").AddColumn("Links").AsString().Nullable();
 
             // Set metadata ID
-            Execute.Sql(@"UPDATE Albums
-                          SET ArtistMetadataId = (SELECT ArtistMetadata.Id 
-                                                  FROM ArtistMetadata 
-                                                  JOIN Artists ON ArtistMetadata.Id = Artists.ArtistMetadataId
-                                                  WHERE Albums.ArtistId = Artists.Id)");
+            Execute.Sql(@"UPDATE ""Albums""
+                          SET ""ArtistMetadataId"" = (SELECT ""ArtistMetadata"".""Id"" 
+                                                  FROM ""ArtistMetadata"" 
+                                                  JOIN ""Artists"" ON ""ArtistMetadata"".""Id"" = ""Artists"".""ArtistMetadataId""
+                                                  WHERE ""Albums"".""ArtistId"" = ""Artists"".""Id"")");
 
             // TRACKS TABLE
             Alter.Table("Tracks").AddColumn("ForeignRecordingId").AsString().WithDefaultValue("0");
@@ -80,18 +80,18 @@ namespace NzbDrone.Core.Datastore.Migration
             Alter.Table("Tracks").AddColumn("ArtistMetadataId").AsInt32().WithDefaultValue(0);
 
             // Set track release to the only release we've bothered populating
-            Execute.Sql(@"UPDATE Tracks
-                          SET AlbumReleaseId = (SELECT AlbumReleases.Id 
-                                                FROM AlbumReleases
-                                                JOIN Albums ON AlbumReleases.AlbumId = Albums.Id
-                                                WHERE Albums.Id = Tracks.AlbumId)");
+            Execute.Sql(@"UPDATE ""Tracks""
+                          SET ""AlbumReleaseId"" = (SELECT ""AlbumReleases"".""Id"" 
+                                                FROM ""AlbumReleases""
+                                                JOIN ""Albums"" ON ""AlbumReleases"".""AlbumId"" = ""Albums"".""Id""
+                                                WHERE ""Albums"".""Id"" = ""Tracks"".""AlbumId"")");
 
             // Set metadata ID
-            Execute.Sql(@"UPDATE Tracks
-                          SET ArtistMetadataId = (SELECT ArtistMetadata.Id 
-                                                  FROM ArtistMetadata 
-                                                  JOIN Albums ON ArtistMetadata.Id = Albums.ArtistMetadataId
-                                                  WHERE Tracks.AlbumId = Albums.Id)");
+            Execute.Sql(@"UPDATE ""Tracks""
+                          SET ""ArtistMetadataId"" = (SELECT ""ArtistMetadata"".""Id"" 
+                                                  FROM ""ArtistMetadata"" 
+                                                  JOIN ""Albums"" ON ""ArtistMetadata"".""Id"" = ""Albums"".""ArtistMetadataId""
+                                                  WHERE ""Tracks"".""AlbumId"" = ""Albums"".""Id"")");
 
             // CLEAR OUT OLD COLUMNS
 
@@ -196,7 +196,7 @@ namespace NzbDrone.Core.Datastore.Migration
             using (var getReleasesCmd = conn.CreateCommand())
             {
                 getReleasesCmd.Transaction = tran;
-                getReleasesCmd.CommandText = @"SELECT Id, CurrentRelease FROM Albums";
+                getReleasesCmd.CommandText = @"SELECT ""Id"", ""CurrentRelease"" FROM ""Albums""";
 
                 using (var releaseReader = getReleasesCmd.ExecuteReader())
                 {
@@ -260,7 +260,7 @@ namespace NzbDrone.Core.Datastore.Migration
                 {
                     writeReleaseCmd.Transaction = tran;
                     writeReleaseCmd.CommandText =
-                        "INSERT INTO AlbumReleases (AlbumId, ForeignReleaseId, Title, Status, Duration, Label, Disambiguation, Country, Media, TrackCount, Monitored) " +
+                        "INSERT INTO \"AlbumReleases\" (\"AlbumId\", \"ForeignReleaseId\", \"Title\", \"Status\", \"Duration\", \"Label\", \"Disambiguation\", \"Country\", \"Media\", \"TrackCount\", \"Monitored\") " +
                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                     writeReleaseCmd.AddParameter(release.AlbumId);
                     writeReleaseCmd.AddParameter(release.ForeignReleaseId);

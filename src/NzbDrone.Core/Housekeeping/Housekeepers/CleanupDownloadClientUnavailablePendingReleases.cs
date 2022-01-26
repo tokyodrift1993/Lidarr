@@ -18,9 +18,9 @@ namespace NzbDrone.Core.Housekeeping.Housekeepers
         {
             using (var mapper = _database.OpenConnection())
             {
-                mapper.Execute(@"DELETE FROM PendingReleases
-                            WHERE Added < @TwoWeeksAgo
-                            AND REASON IN @Reasons",
+                mapper.Execute(@"DELETE FROM ""PendingReleases""
+                            WHERE ""Added"" < @TwoWeeksAgo
+                            AND ""REASON"" IN @Reasons",
                                new
                                {
                                    TwoWeeksAgo = DateTime.UtcNow.AddDays(-14),

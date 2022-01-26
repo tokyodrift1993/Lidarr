@@ -10,12 +10,14 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.0" />
     <PackageReference Include="FluentMigrator.Runner" Version="4.0.0-alpha.268" />
+    <PackageReference Include="FluentMigrator.Runner.Postgres" Version="4.0.0-alpha.268" />
     <PackageReference Include="FluentMigrator.Runner.SQLite" Version="4.0.0-alpha.268" />
     <PackageReference Include="FluentValidation" Version="8.6.2" />
     <PackageReference Include="MailKit" Version="2.11.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="NLog" Version="4.7.9" />
     <PackageReference Include="NLog.Extensions.Logging" Version="1.7.2" />
+    <PackageReference Include="Npgsql" Version="5.0.11" />
     <PackageReference Include="System.IO.Abstractions" Version="13.2.29" />
     <PackageReference Include="TagLibSharp-Lidarr" Version="2.2.0.25" />
     <PackageReference Include="Kveer.XmlRPC" Version="1.1.1" />

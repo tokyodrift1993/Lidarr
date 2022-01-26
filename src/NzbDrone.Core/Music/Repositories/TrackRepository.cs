@@ -30,6 +30,16 @@ namespace NzbDrone.Core.Music
 
         public List<Track> GetTracks(int artistId)
         {
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                return Query(Builder()
+                         .Join<Track, AlbumRelease>((t, r) => t.AlbumReleaseId == r.Id)
+                         .Join<AlbumRelease, Album>((r, a) => r.AlbumId == a.Id)
+                         .Join<Album, Artist>((album, artist) => album.ArtistMetadataId == artist.ArtistMetadataId)
+                         .WherePostgres<AlbumRelease>(r => r.Monitored == true)
+                         .WherePostgres<Artist>(x => x.Id == artistId));
+            }
+
             return Query(Builder()
                          .Join<Track, AlbumRelease>((t, r) => t.AlbumReleaseId == r.Id)
                          .Join<AlbumRelease, Album>((r, a) => r.AlbumId == a.Id)
@@ -40,6 +50,15 @@ namespace NzbDrone.Core.Music
 
         public List<Track> GetTracksByAlbum(int albumId)
         {
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                return Query(Builder()
+                         .Join<Track, AlbumRelease>((t, r) => t.AlbumReleaseId == r.Id)
+                         .Join<AlbumRelease, Album>((r, a) => r.AlbumId == a.Id)
+                         .WherePostgres<AlbumRelease>(r => r.Monitored == true)
+                         .WherePostgres<Album>(x => x.Id == albumId));
+            }
+
             return Query(Builder()
                          .Join<Track, AlbumRelease>((t, r) => t.AlbumReleaseId == r.Id)
                          .Join<AlbumRelease, Album>((r, a) => r.AlbumId == a.Id)
@@ -55,6 +74,17 @@ namespace NzbDrone.Core.Music
         public List<Track> GetTracksByReleases(List<int> albumReleaseIds)
         {
             // this will populate the artist metadata also
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                return _database.QueryJoined<Track, ArtistMetadata>(Builder()
+                               .Join<Track, ArtistMetadata>((l, r) => l.ArtistMetadataId == r.Id)
+                               .WherePostgres<Track>(x => albumReleaseIds.Contains(x.AlbumReleaseId)), (track, metadata) =>
+                    {
+                        track.ArtistMetadata = metadata;
+                        return track;
+                    }).ToList();
+            }
+
             return _database.QueryJoined<Track, ArtistMetadata>(Builder()
                                .Join<Track, ArtistMetadata>((l, r) => l.ArtistMetadataId == r.Id)
                                .Where<Track>(x => albumReleaseIds.Contains(x.AlbumReleaseId)), (track, metadata) =>
@@ -81,6 +111,17 @@ namespace NzbDrone.Core.Music
 
         public List<Track> TracksWithFiles(int artistId)
         {
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                return Query(Builder()
+                         .Join<Track, AlbumRelease>((t, r) => t.AlbumReleaseId == r.Id)
+                         .Join<AlbumRelease, Album>((r, a) => r.AlbumId == a.Id)
+                         .Join<Album, Artist>((album, artist) => album.ArtistMetadataId == artist.ArtistMetadataId)
+                         .Join<Track, TrackFile>((t, f) => t.TrackFileId == f.Id)
+                         .WherePostgres<AlbumRelease>(r => r.Monitored == true)
+                         .WherePostgres<Artist>(x => x.Id == artistId));
+            }
+
             return Query(Builder()
                          .Join<Track, AlbumRelease>((t, r) => t.AlbumReleaseId == r.Id)
                          .Join<AlbumRelease, Album>((r, a) => r.AlbumId == a.Id)
@@ -94,6 +135,15 @@ namespace NzbDrone.Core.Music
         {
             //x.Id == null is converted to SQL, so warning incorrect
 #pragma warning disable CS0472
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                return Query(Builder()
+                         .Join<Track, AlbumRelease>((t, r) => t.AlbumReleaseId == r.Id)
+                         .LeftJoin<Track, TrackFile>((t, f) => t.TrackFileId == f.Id)
+                         .WherePostgres<AlbumRelease>(r => r.Monitored == true && r.AlbumId == albumId)
+                         .WherePostgres<TrackFile>(x => x.Id == null));
+            }
+
             return Query(Builder()
                          .Join<Track, AlbumRelease>((t, r) => t.AlbumReleaseId == r.Id)
                          .LeftJoin<Track, TrackFile>((t, f) => t.TrackFileId == f.Id)

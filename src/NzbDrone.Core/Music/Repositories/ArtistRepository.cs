@@ -46,11 +46,27 @@ namespace NzbDrone.Core.Music
 
         public Artist FindById(string foreignArtistId)
         {
-            var artist = Query(Builder().Where<ArtistMetadata>(m => m.ForeignArtistId == foreignArtistId)).SingleOrDefault();
+            Artist artist;
+
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                artist = Query(Builder().WherePostgres<ArtistMetadata>(m => m.ForeignArtistId == foreignArtistId)).SingleOrDefault();
+            }
+            else
+            {
+                artist = Query(Builder().Where<ArtistMetadata>(m => m.ForeignArtistId == foreignArtistId)).SingleOrDefault();
+            }
 
             if (artist == null)
             {
-                artist = Query(Builder().Where<ArtistMetadata>(x => x.OldForeignArtistIds.Contains(foreignArtistId))).SingleOrDefault();
+                if (_database.DatabaseType == DatabaseType.PostgreSQL)
+                {
+                    artist = Query(Builder().WherePostgres<ArtistMetadata>(x => x.OldForeignArtistIds.Contains(foreignArtistId))).SingleOrDefault();
+                }
+                else
+                {
+                    artist = Query(Builder().Where<ArtistMetadata>(x => x.OldForeignArtistIds.Contains(foreignArtistId))).SingleOrDefault();
+                }
             }
 
             return artist;
@@ -72,7 +88,7 @@ namespace NzbDrone.Core.Music
         {
             using (var conn = _database.OpenConnection())
             {
-                var strSql = "SELECT Id AS [Key], Path AS [Value] FROM Artists";
+                var strSql = "SELECT \"Id\" AS \"Key\", \"Path\" AS \"Value\" FROM \"Artists\"";
                 return conn.Query<KeyValuePair<int, string>>(strSql).ToDictionary(x => x.Key, x => x.Value);
             }
         }

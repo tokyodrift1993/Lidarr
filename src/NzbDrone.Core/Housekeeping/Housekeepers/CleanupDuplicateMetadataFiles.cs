@@ -24,12 +24,12 @@ namespace NzbDrone.Core.Housekeeping.Housekeepers
         {
             using (var mapper = _database.OpenConnection())
             {
-                mapper.Execute(@"DELETE FROM MetadataFiles
-                                     WHERE Id IN (
-                                         SELECT Id FROM MetadataFiles
-                                         WHERE Type = 1
-                                         GROUP BY ArtistId, Consumer
-                                         HAVING COUNT(ArtistId) > 1
+                mapper.Execute(@"DELETE FROM ""MetadataFiles""
+                                     WHERE ""Id"" IN (
+                                         SELECT ""Id"" FROM ""MetadataFiles""
+                                         WHERE ""Type"" = 1
+                                         GROUP BY ""ArtistId"", ""Consumer""
+                                         HAVING COUNT(""ArtistId"") > 1
                                      )");
             }
         }
@@ -38,12 +38,12 @@ namespace NzbDrone.Core.Housekeeping.Housekeepers
         {
             using (var mapper = _database.OpenConnection())
             {
-                mapper.Execute(@"DELETE FROM MetadataFiles
-                                         WHERE Id IN (
-                                         SELECT Id FROM MetadataFiles
-                                         WHERE Type = 6
-                                         GROUP BY AlbumId, Consumer
-                                         HAVING COUNT(AlbumId) > 1
+                mapper.Execute(@"DELETE FROM ""MetadataFiles""
+                                         WHERE ""Id"" IN (
+                                         SELECT ""Id"" FROM ""MetadataFiles""
+                                         WHERE ""Type"" = 6
+                                         GROUP BY ""AlbumId"", ""Consumer""
+                                         HAVING COUNT(""AlbumId"") > 1
                                      )");
             }
         }

@@ -109,6 +109,7 @@
   "CreateGroup": "Create group",
   "CutoffHelpText": "Once this quality is reached Lidarr will no longer download albums",
   "CutoffUnmet": "Cutoff Unmet",
+  "Database": "Database",
   "Dates": "Dates",
   "DBMigration": "DB Migration",
   "DefaultLidarrTags": "Default Lidarr Tags",

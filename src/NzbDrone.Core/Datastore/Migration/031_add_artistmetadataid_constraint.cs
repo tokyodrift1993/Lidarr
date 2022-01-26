@@ -9,7 +9,7 @@ namespace NzbDrone.Core.Datastore.Migration
         protected override void MainDbUpgrade()
         {
             // Remove any duplicate artists
-            Execute.Sql(@"DELETE FROM Artists
+            IfDatabase("sqlite").Execute.Sql(@"DELETE FROM Artists
                           WHERE Id NOT IN (
                             SELECT MIN(Artists.id) from Artists
                             JOIN ArtistMetadata ON Artists.ArtistMetadataId = ArtistMetadata.Id

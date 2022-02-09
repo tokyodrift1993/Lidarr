@@ -28,14 +28,27 @@ namespace NzbDrone.Core.ArtistStats
         public List<AlbumStatistics> ArtistStatistics()
         {
             var time = DateTime.UtcNow;
+
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                return Query(Builder().WherePostgres<Album>(x => x.ReleaseDate < time));
+            }
+
             return Query(Builder().Where<Album>(x => x.ReleaseDate < time));
         }
 
         public List<AlbumStatistics> ArtistStatistics(int artistId)
         {
             var time = DateTime.UtcNow;
+
+            if (_database.DatabaseType == DatabaseType.PostgreSQL)
+            {
+                return Query(Builder().WherePostgres<Album>(x => x.ReleaseDate < time)
+                         .WherePostgres<Artist>(x => x.Id == artistId));
+            }
+
             return Query(Builder().Where<Album>(x => x.ReleaseDate < time)
-                         .Where<Artist>(x => x.Id == artistId));
+                        .Where<Artist>(x => x.Id == artistId));
         }
 
         private List<AlbumStatistics> Query(SqlBuilder builder)

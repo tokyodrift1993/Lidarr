@@ -54,12 +54,12 @@ namespace NzbDrone.Core.Music
             {
                 return Query(Builder().WherePostgres<Album>(x => artistMetadataIds.Contains(x.ArtistMetadataId) && x.ReleaseDate < now)
                                         .GroupBy<Album>(x => x.ArtistMetadataId)
-                                        .Having("Albums.ReleaseDate = MAX(Albums.ReleaseDate)"));
+                                        .Having("\"Albums\".\"ReleaseDate\" = MAX(\"Albums\".\"ReleaseDate\")"));
             }
 
             return Query(Builder().Where<Album>(x => artistMetadataIds.Contains(x.ArtistMetadataId) && x.ReleaseDate < now)
                          .GroupBy<Album>(x => x.ArtistMetadataId)
-                         .Having("Albums.ReleaseDate = MAX(Albums.ReleaseDate)"));
+                         .Having("\"Albums\".\"ReleaseDate\" = MAX(\"Albums\".\"ReleaseDate\")"));
         }
 
         public List<Album> GetNextAlbums(IEnumerable<int> artistMetadataIds)
@@ -70,12 +70,12 @@ namespace NzbDrone.Core.Music
             {
                 return Query(Builder().WherePostgres<Album>(x => artistMetadataIds.Contains(x.ArtistMetadataId) && x.ReleaseDate > now)
                                         .GroupBy<Album>(x => x.ArtistMetadataId)
-                                        .Having("Albums.ReleaseDate = MIN(Albums.ReleaseDate)"));
+                                        .Having("\"Albums\".\"ReleaseDate\" = MIN(\"Albums\".\"ReleaseDate\")"));
             }
 
             return Query(Builder().Where<Album>(x => artistMetadataIds.Contains(x.ArtistMetadataId) && x.ReleaseDate > now)
                          .GroupBy<Album>(x => x.ArtistMetadataId)
-                         .Having("Albums.ReleaseDate = MIN(Albums.ReleaseDate)"));
+                         .Having("\"Albums\".\"ReleaseDate\" = MIN(\"Albums\".\"ReleaseDate\")"));
         }
 
         public List<Album> GetAlbumsByArtistMetadataId(int artistMetadataId)
@@ -164,7 +164,7 @@ namespace NzbDrone.Core.Music
             {
                 foreach (var belowCutoff in profile.QualityIds)
                 {
-                    clauses.Add(string.Format("(Artists.[QualityProfileId] = {0} AND MIN(TrackFiles.Quality) LIKE '%_quality_: {1},%')", profile.ProfileId, belowCutoff));
+                    clauses.Add(string.Format("(\"Artists\".\"[QualityProfileId]\" = {0} AND MIN(\"TrackFiles\".\"Quality\") LIKE '%_quality_: {1},%')", profile.ProfileId, belowCutoff));
                 }
             }
 

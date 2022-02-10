@@ -67,7 +67,7 @@ namespace NzbDrone.Core.Datastore
 
             var rightTable = TableMapping.Mapper.TableNameMapping(typeof(TRight));
 
-            return builder.Join($"{rightTable} ON {wb.ToString()}");
+            return builder.Join($"\"{rightTable}\" ON {wb.ToString()}");
         }
 
         public static SqlBuilder LeftJoin<TLeft, TRight>(this SqlBuilder builder, Expression<Func<TLeft, TRight, bool>> filter)
@@ -83,7 +83,7 @@ namespace NzbDrone.Core.Datastore
         {
             var table = TableMapping.Mapper.TableNameMapping(typeof(TModel));
             var propName = property.GetMemberName().Name;
-            return builder.GroupBy($"{table}.{propName}");
+            return builder.GroupBy($"\"{table}\".\"{propName}\"");
         }
 
         public static SqlBuilder.Template AddSelectTemplate(this SqlBuilder builder, Type type)
